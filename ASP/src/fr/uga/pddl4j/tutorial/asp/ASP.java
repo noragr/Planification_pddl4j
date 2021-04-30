@@ -34,18 +34,18 @@ import java.util.Set;
 /**
  * This class implements a simple forward planner based on A* algorithm.
  *
- * @author D. Pellier
- * @version 1.0 - 06.06.2018
+ * @author N. Graffer, based on D. Pellier
+ * @
  */
 public final class ASP extends AbstractStateSpacePlanner {
 
     /*
-     * The arguments of the planner.
+     *Arguments of planner
      */
     private Properties arguments;
 
     /**
-     * Creates a new HSP planner with the default parameters.
+     * Creating a new HSP plan
      *
      * @param arguments the arguments of the planner.
      */
@@ -55,24 +55,23 @@ public final class ASP extends AbstractStateSpacePlanner {
     }
 
     /**
-     * Solves the planning problem and returns the first solution search found.
+     * Search solves the problem, if possible, and returns null if  solution does not exist. 
      *
      * @param problem the problem to be solved.
-     * @return a solution search or null if it does not exist.
      */
     @Override
     public Plan search(final CodedProblem problem) {
 
-        // First we create an instance of the heuristic to use to guide the search
+        // Creating a heuristic to be used guiding the search. 
         final Heuristic heuristic = HeuristicToolKit.createHeuristic(Heuristic.Type.FAST_FORWARD, problem);
 
         // We get the initial state from the planning problem
         final BitState init = new BitState(problem.getInit());
 
-        // We initialize the closed list of nodes (store the nodes explored)
+        // Initializing the closed list of nodes.
         final Set<Node> close = new HashSet<>();
 
-        // We initialize the opened list to store the pending node according to function f
+        // Initializing the open list so that we can store pending node in regarsd to func f. 
         final double weight = (double) arguments.get(StateSpacePlanner.WEIGHT);
         final PriorityQueue<Node> open = new PriorityQueue<>(100, new Comparator<Node>() {
             public int compare(Node n1, Node n2) {
@@ -82,44 +81,44 @@ public final class ASP extends AbstractStateSpacePlanner {
             }
         });
 
-        // We create the root node of the tree search
+        // Creating the root of the node tree. 
         final Node root = new Node(init, null, -1, 0, heuristic.estimate(init, problem.getGoal()));
 
-        // We adds the root to the list of pending nodes
+        // Add root to list. 
         open.add(root);
         Plan plan = null;
 
         final int timeout = ((int) this.arguments.get(Planner.TIMEOUT)) * 1000;
         long time = 0;
 
-        // We start the search
+        // Start search
         while (!open.isEmpty() && plan == null && time < timeout) {
 
-            // We pop the first node in the pending list open
+            // pop node
             final Node current = open.poll();
             close.add(current);
 
-            // If the goal is satisfy in the current node then extract the search and return it
+            // Check if goal is satisfied with node
             if (current.satisfy(problem.getGoal())) {
                 return this.extractPlan(current, problem);
             }
 
-            // Else we try to apply the operators of the problem to the current node
+            // 
             else {
                 for (int i = 0; i < problem.getOperators().size(); i++) {
-                    // We get the its operator of the problem
+                    // get operators of problem
                     BitOp a = problem.getOperators().get(i);
                     // If the operator is applicable in the current node
                     if (a.isApplicable(current)) {
                         Node next = new Node(current);
-                        // We apply the effect of the operator
+                        // applying eeffect. 
                         final List<CondBitExp> effects = a.getCondEffects();
                         for (CondBitExp ce : effects) {
                             if (current.satisfy(ce.getCondition())) {
                                 next.apply(ce.getEffects());
                             }
                         }
-                        // We set the new child node information
+                        // Set next-node information. 
                         final int g = (int)current.getCost() + 1;
                         if (!close.contains(next)) {
                             next.setCost(g);
@@ -133,10 +132,10 @@ public final class ASP extends AbstractStateSpacePlanner {
             }
         }
 
-        // We compute the memory by the search
+        // Compute memory
         this.getStatistics().setMemoryUsedToSearch(MemoryAgent.sizeOf(open) + MemoryAgent.sizeOf(close));
 
-        // Finally, we return the search computed or null if no search was found
+        // return solution or null if solution does not exist. 
         return plan;
     }
 
